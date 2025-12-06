@@ -1,4 +1,22 @@
+[MASTER]
+ignore=migrations
+ignore-patterns=migrations/*, */migrations/*
+jobs=1
+
+[MESSAGES CONTROL]
+disable=
+    all
+
+[REPORTS]
+reports=no
+score=yes
+
+[FORMAT]
+max-line-length=999
+
+
 [MAIN]
+
 
 # Analyse import fallback blocks. This can be used to support both Python 2 and
 # 3 compatible code, which means that the block might have code that exists
