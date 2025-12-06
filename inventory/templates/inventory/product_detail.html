@@ -1,0 +1,65 @@
+{% extends 'inventory/base.html' %}
+{% block title %}{{ product.name }} - Cloud Inventory{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <h3 class="card-title">{{ product.name }}</h3>
+        <h6 class="card-subtitle text-muted mb-3">SKU: {{ product.sku }}</h6>
+        <p class="card-text">
+          {{ product.description|default:"No description." }}
+        </p>
+        <dl class="row">
+          <dt class="col-sm-3">Category</dt>
+          <dd class="col-sm-9">{{ product.category|default:"-" }}</dd>
+          <dt class="col-sm-3">Supplier</dt>
+          <dd class="col-sm-9">{{ product.supplier|default:"-" }}</dd>
+          <dt class="col-sm-3">Unit Price</dt>
+          <dd class="col-sm-9">{{ product.unit_price|floatformat:2 }}</dd>
+          <dt class="col-sm-3">Quantity</dt>
+          <dd class="col-sm-9">{{ product.quantity_in_stock }}</dd>
+          <dt class="col-sm-3">Reorder Level</dt>
+          <dd class="col-sm-9">{{ product.reorder_level }}</dd>
+        </dl>
+      </div>
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <a href="{% url 'product-update' product.pk %}" class="btn btn-outline-secondary">
+          Edit
+        </a>
+        <a href="{% url 'product-delete' product.pk %}" class="btn btn-outline-danger">
+          Delete
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">Stock Summary</h5>
+      </div>
+      <div class="card-body">
+        <p>
+          Current quantity:
+          <strong>{{ product.quantity_in_stock }}</strong>
+        </p>
+        <p>
+          Reorder level:
+          <strong>{{ product.reorder_level }}</strong>
+        </p>
+        {% if product.is_low_stock %}
+          <div class="alert alert-warning">
+            This product is low on stock.
+          </div>
+        {% else %}
+          <div class="alert alert-success">
+            Stock level is healthy.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
