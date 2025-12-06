@@ -1,11 +1,9 @@
 [MASTER]
 ignore=migrations
-ignore-patterns=migrations/*, */migrations/*
 jobs=1
 
 [MESSAGES CONTROL]
-disable=
-    all
+disable=all
 
 [REPORTS]
 reports=no
@@ -13,5 +11,3 @@ score=yes
 
 [FORMAT]
 max-line-length=999
-
-
