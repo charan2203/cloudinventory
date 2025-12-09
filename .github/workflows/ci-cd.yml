@@ -52,13 +52,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 🔐 Configure AWS credentials + EB names using secrets
+      # Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       # Install EB CLI
@@ -77,15 +76,23 @@ jobs:
                "*.sqlite3" \
                "*.md"
 
-      # REAL EB DEPLOYMENT
+      # Deploy to Elastic Beanstalk
       - name: Deploy to Elastic Beanstalk
+        env:
+          EB_APP_NAME: ${{ secrets.EB_APP_NAME }}
+          EB_ENV_NAME: ${{ secrets.EB_ENV_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          eb init "${{ secrets.EB_APP_NAME }}" \
+          if [ -z "$EB_APP_NAME" ] || [ -z "$EB_ENV_NAME" ]; then
+            echo "ERROR: EB_APP_NAME or EB_ENV_NAME is not set."
+            exit 1
+          fi
+
+          eb init "$EB_APP_NAME" \
             --platform "Python 3.11" \
-            --region "${{ secrets.AWS_REGION }}"
+            --region "$AWS_REGION"
 
-          eb use "${{ secrets.EB_ENV_NAME }}"
-
+          eb use "$EB_ENV_NAME"
           eb deploy --staged --timeout 20
 
       - name: Completed
