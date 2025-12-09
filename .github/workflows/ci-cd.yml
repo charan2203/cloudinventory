@@ -2,9 +2,9 @@ name: CloudInventory CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   static-analysis:
@@ -29,68 +29,72 @@ jobs:
         run: |
           pylint $(git ls-files '*.py') || true
 
-          
   security-analysis:
-      name: Security & Quality Analysis (SonarCloud)
-      runs-on: ubuntu-latest
-      needs: static-analysis
-    
-      steps:
-        - name: Checkout Code
-          uses: actions/checkout@v4
-    
-        - name: Install Dependencies
-          run: |
-            echo "Skipping actual SonarCloud scan."
-            echo "Simulating successful security analysis..."
-            sleep 2
-            echo "Security checks passed."
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    needs: static-analysis
 
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Simulate Security Scan
+        run: |
+          echo "Security scan simulated."
+          echo "OK"
 
   deploy-eb:
-    name: Deploy to Elastic Beanstalk
+    name: Deploy to AWS Elastic Beanstalk
     runs-on: ubuntu-latest
     needs: security-analysis
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Preparing Deployment Bundle
+      # Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Install EB CLI
+      - name: Install Elastic Beanstalk CLI
         run: |
-          echo "Packaging application for Elastic Beanstalk..."
+          pip install --upgrade pip
+          pip install awsebcli
+
+      # Package app
+      - name: Prepare Deployment Bundle
+        run: |
           zip -r deploy.zip . \
             -x "*.git*" \
                "*__pycache__*" \
                "*.pytest_cache*" \
                "*.sqlite3" \
                "*.md"
-          echo "Deployment package created successfully."
 
-      - name: Upload Deployment Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: cloudinventory-deploy
-          path: deploy.zip
-
-      - name: Deploying to Elastic Beanstalk
+      # Deploy to Elastic Beanstalk
+      - name: Deploy to Elastic Beanstalk
+        env:
+          EB_APP_NAME: ${{ secrets.EB_APP_NAME }}
+          EB_ENV_NAME: ${{ secrets.EB_ENV_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          echo "Starting deployment to Elastic Beanstalk environment..."
-          echo "Uploading application version to S3 bucket..."
-          sleep 2
-          echo "Registering new application version with Elastic Beanstalk..."
-          sleep 2
-          echo "Updating environment CloudInventory-env..."
-          sleep 3
-          echo "Waiting for environment health to stabilize..."
-          sleep 3
-          echo "Environment status: OK"
-          echo "Health: GREEN"
-          echo "Application version deployed successfully."
+          if [ -z "$EB_APP_NAME" ] || [ -z "$EB_ENV_NAME" ]; then
+            echo "ERROR: EB_APP_NAME or EB_ENV_NAME is not set."
+            exit 1
+          fi
 
-      - name: Deployment Completed
-        run: |
-          echo "🎉 Deployment finished successfully!"
-          echo "Elastic Beanstalk environment is now running the latest version."
-          exit 0
+          eb init "$EB_APP_NAME" \
+            --platform "Python 3.11" \
+            --region "$AWS_REGION"
 
+          eb use "$EB_ENV_NAME"
+          eb deploy --staged --timeout 20
+
+      - name: Completed
+        run: echo "🎉 Deployment successful!"
